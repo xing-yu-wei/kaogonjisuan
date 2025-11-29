@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>体制之路小程序 - 基础计算</title>
+
+    <link rel="manifest" href="manifest.json"> 
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <style>
+        /* 1. 全局和字体设置 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Microsoft YaHei", "Heiti SC", sans-serif;
+            background: #f0f8f0; 
+            color: #333;
+        }
+
+        /* 2. 主容器 */
+        .container {
+            width: 100%;
+            max-width: 450px; 
+            margin: 0 auto;
+            min-height: 100vh; /* 确保占据全部视口高度 */
+            background: linear-gradient(to bottom, #f0f8f0, #ffffff); 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 3. 顶部导航栏 */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 1.5vh 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+        .back-arrow {
+            font-size: 1.5em;
+            margin-right: 10px;
+            cursor: pointer;
+            padding: 0 5px;
+            visibility: hidden; 
+        }
+
+        /* 4. 主界面 (main-menu) 样式 - 保持不变 */
+        .main-menu {
+            padding: 20px;
+            flex-grow: 1;
+        }
+        .category-title {
+            background-color: #fff3e0; 
+            color: #ff9800; 
+            padding: 1.5vh 15px; 
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .button-grid.single-column {
+            grid-template-columns: 1fr;
+        }
+        .menu-button {
+            padding: 2vh 10px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.05em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-highlight {
+            background-color: #ff9800;
+            color: white;
+        }
+        .btn-normal {
+            background-color: #e0e0e0;
+            color: #757575;
+        }
+
+        /* 5. 练习界面 (practice-page) 样式 - 极限压缩 */
+        .practice-page {
+            display: none; 
+            flex-direction: column;
+            flex-grow: 1;
+            padding: 0; 
+            background-color: white;
+            overflow-y: hidden; /* 尝试再次隐藏滚动条 */
+        }
+        .practice-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 1vh 20px; 
+            font-size: 1.1em;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+        }
+        .timer {
+            color: #f44336; 
+        }
+        .problem-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1vh 20px 0; /* 压缩底部填充 */
+            min-height: 20vh; /* 略微减小最小高度 */
+        }
+        .question {
+            font-size: 2.3em;
+            font-weight: bold;
+            margin-bottom: 1vh; /* 极限压缩边距 */
+            min-height: 1.5em; 
+            text-align: center;
+        }
+        .answer-display {
+            font-size: 2.0em; 
+            font-weight: bold;
+            color: #333;
+            min-height: 1.5em;
+            padding: 0.5vh 15px;
+            border-bottom: 3px solid #64b5f6; 
+            margin-bottom: 0.5vh; /* 极限压缩边距 */
+            word-break: break-all;
+            text-align: center;
+            max-width: 100%;
+        }
+        #feedback-message {
+            min-height: 2em;
+            margin-bottom: 0.5vh; 
+            font-size: 1.1em; 
+            font-weight: bold;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s; 
+        }
+        .control-buttons {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 0.5vh; /* 极限压缩边距 */
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .control-btn {
+            flex: 1;
+            padding: 1vh 10px; /* 进一步压缩按钮高度 */
+            border-radius: 8px;
+            font-size: 1.0em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: none;
+        }
+        
+        /* 6. 键盘区样式 - 核心极限压缩 */
+        .keyboard {
+            background-color: #f5f5f5;
+            padding: 0.5vh 0.8vh; /* 极限压缩键盘区域的整体填充 */
+            border-top: 1px solid #ddd;
+        }
+        .key-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px; /* 进一步减小行间距和键间距 */
+            margin-bottom: 4px; /* 进一步减小行间距 */
+        }
+        .key {
+            /* 关键：使用最小的垂直填充，让高度主要由字体决定 */
+            padding: 0.8vh 0.5vh; 
+            line-height: 1.5; /* 保持行高，但减少填充 */
+            border-radius: 6px; /* 略微减小圆角 */
+            text-align: center;
+            font-size: 1.3em; 
+            font-weight: normal;
+            cursor: pointer;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); /* 略微减小阴影 */
+            user-select: none; 
+        }
+        .key.action-key {
+            font-size: 1.0em;
+            background-color: #e0e0e0;
+            color: #424242;
+        }
+        /* 布局相关 */
+        .key-last-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .key-zero {
+             grid-column: 2 / 3; 
+        }
+        .key-dot {
+            grid-column: 1 / 2;
+        }
+        .correct {
+            color: #4CAF50; 
+        }
+        .wrong {
+            color: #f44336; 
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header">
+            <span class="back-arrow" id="back-button" onclick="goBack()">&#9664;</span>
+            <span id="header-title">体制之路小程序</span>
+        </div>
+
+        <div class="main-menu" id="main-menu">
+            <div class="category-title">加减</div>
+            
+            <div class="button-grid">
+                <div class="menu-button btn-highlight" onclick="startPractice('两位数加减')">两位数加减</div>
+                <div class="menu-button btn-normal" onclick="startPractice('凑整百练习')">凑整百练习</div>
+                <div class="menu-button btn-normal" onclick="startPractice('三位数加减')">三位数加减</div>
+                <div class="menu-button btn-normal" onclick="startPractice('多数相加')">多数相加</div>
+            </div>
+
+            <div class="button-grid single-column" style="margin-top: 15px;">
+                <div class="menu-button btn-normal" onclick="startPractice('混合加减')">混合加减</div>
+            </div>
+        </div>
+
+        <div class="practice-page" id="practice-page">
+            <div class="practice-header">
+                <span id="progress-display">1/10</span>
+                <span class="timer"><span id="timer-display">0</span> 秒</span>
+            </div>
+
+            <div class="problem-area">
+                <div class="question" id="problem-question"></div>
+                
+                <div class="answer-display" id="answer-input"></div>
+
+                <div id="feedback-message"></div>
+
+                <div class="control-buttons">
+                    <button class="control-btn btn-reset" onclick="resetPractice()">重开</button>
+                    <button class="control-btn btn-confirm" onclick="submitAnswer()">确定</button>
+                </div>
+            </div>
+
+            <div class="keyboard">
+                <div class="key-row">
+                    <div class="key action-key" onclick="handleKey('-')">-</div>
+                    <div class="key action-key" onclick="clearInput()">清空</div>
+                    <div class="key action-key" onclick="backspace()">退格</div>
+                </div>
+                <div class="key-row">
+                    <div class="key" onclick="handleKey('1')">1</div>
+                    <div class="key" onclick="handleKey('2')">2</div>
+                    <div class="key" onclick="handleKey('3')">3</div>
+                </div>
+                <div class="key-row">
+                    <div class="key" onclick="handleKey('4')">4</div>
+                    <div class="key" onclick="handleKey('5')">5</div>
+                    <div class="key" onclick="handleKey('6')">6</div>
+                </div>
+                <div class="key-row">
+                    <div class="key" onclick="handleKey('7')">7</div>
+                    <div class="key" onclick="handleKey('8')">8</div>
+                    <div class="key" onclick="handleKey('9')">9</div>
+                </div>
+                <div class="key-row key-last-row">
+                    <div class="key key-dot" onclick="handleKey('.')">.</div>
+                    <div class="key key-zero" onclick="handleKey('0')">0</div>
+                    <div></div> </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mainMenu = document.getElementById('main-menu');
+        const practicePage = document.getElementById('practice-page');
+        const headerTitle = document.getElementById('header-title');
+        const backButton = document.getElementById('back-button');
+        const problemQuestion = document.getElementById('problem-question');
+        const answerInputDisplay = document.getElementById('answer-input');
+        const timerDisplay = document.getElementById('timer-display');
+        const progressDisplay = document.getElementById('progress-display');
+        const feedbackMessage = document.getElementById('feedback-message'); 
+
+        let currentInput = "";
+        let currentCorrectAnswer = null; 
+        let timerInterval;
+        let seconds = 0;
+        let currentQuestionType = "";
+        let currentQuestionIndex = 0;
+        const totalQuestions = 10;
+        const FEEDBACK_DELAY = 300; 
+
+        /** * 题目生成器 (生成题目并计算答案) */
+        function generateQuestion(type) {
+            let q = "";
+            let a = 0; 
+            
+            const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const randSign = () => Math.random() < 0.5 ? '+' : '-';
+
+            switch (type) {
+                case '两位数加减':
+                    const op1_2 = randInt(10, 99);
+                    const op2_2 = randInt(10, 99);
+                    const sign_2 = randSign();
+                    q = `${op1_2} ${sign_2} ${op2_2} =`; 
+                    a = sign_2 === '+' ? op1_2 + op2_2 : op1_2 - op2_2;
+                    break;
+
+                case '凑整百练习':
+                    const target = randInt(3, 9) * 100;
+                    const num = target - randInt(10, 90); 
+                    q = `${num} + ? = ${target}`;
+                    a = target - num; 
+                    break;
+
+                case '三位数加减':
+                    const op1_3 = randInt(100, 999);
+                    const op2_3 = randInt(100, 999);
+                    const sign_3 = randSign();
+                    q = `${op1_3} ${sign_3} ${op2_3} =`; 
+                    a = sign_3 === '+' ? op1_3 + op2_3 : op1_3 - op2_3;
+                    break;
+
+                case '多数相加':
+                    let sum = 0;
+                    let parts = [];
+                    for (let i = 0; i < 4; i++) {
+                        const num = randInt(10, 99);
+                        parts.push(num);
+                        sum += num;
+                    }
+                    q = parts.join(' + ') + ' ='; 
+                    a = sum;
+                    break;
+
+                case '混合加减':
+                    let result = randInt(10, 99);
+                    let q_parts = [result.toString()];
+                    for (let i = 0; i < 2; i++) {
+                        const num = randInt(10, 99);
+                        const sign = randSign();
+                        q_parts.push(sign);
+                        q_parts.push(num.toString());
+                        
+                        result = sign === '+' ? result + num : result - num;
+                    }
+                    q = q_parts.join(' ') + ' =';
+                    a = result;
+                    break;
+                default:
+                    q = "未知类型题目=";
+                    a = 0;
+            }
+            
+            q = q.replace(/\s?\+\s?\-/, ' - ');
+            q = q.replace(/\s?\-\s?\+/, ' - ');
+            
+            return {
+                question: q,
+                answer: a.toString() 
+            };
+        }
+
+
+        /** * 启动计时器 */
+        function startTimer() {
+            stopTimer(); 
+            seconds = 0;
+            timerDisplay.textContent = seconds;
+            timerInterval = setInterval(() => {
+                seconds++;
+                timerDisplay.textContent = seconds;
+            }, 1000);
+        }
+
+        /** * 停止计时器 */
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null; 
+        }
+
+        /**
+         * 模拟进入练习页面的逻辑
+         */
+        function startPractice(type) {
+            currentQuestionType = type;
+            currentQuestionIndex = 1;
+            
+            mainMenu.style.display = 'none';
+            practicePage.style.display = 'flex';
+            
+            headerTitle.textContent = type;
+            backButton.style.visibility = 'visible'; 
+
+            loadNewQuestion();
+            startTimer();
+        }
+
+        /**
+         * 加载新题目
+         */
+        function loadNewQuestion() {
+            if (currentQuestionIndex > totalQuestions) {
+                stopTimer();
+                alert(`恭喜您完成了所有 ${totalQuestions} 道 ${currentQuestionType} 练习！耗时 ${seconds} 秒。`);
+                goBack();
+                return;
+            }
+
+            const problem = generateQuestion(currentQuestionType);
+            problemQuestion.textContent = problem.question;
+            currentCorrectAnswer = problem.answer; 
+            
+            progressDisplay.textContent = `${currentQuestionIndex}/${totalQuestions}`;
+            clearInput(); 
+        }
+
+        /**
+         * 键盘输入处理
+         */
+        function handleKey(key) {
+            hideFeedback(); 
+
+            if (key === '-') {
+                // 严格限制负号只能作为首位且仅一次输入
+                if (currentInput === "") {
+                    currentInput = "-";
+                }
+            } else if (key === '.') {
+                // 允许小数点：只能输入一次，且不能在负号后面直接接
+                if (!currentInput.includes('.') && currentInput !== "-") {
+                     currentInput += key;
+                }
+            } else {
+                // 数字键处理
+                if (currentInput === "-" && key === '0' && currentInput.length === 1) {
+                    currentInput += key;
+                } else if (currentInput === '0' && currentInput.length === 1 && key !== '0') {
+                    currentInput = key;
+                } else {
+                    currentInput += key;
+                }
+            }
+            answerInputDisplay.textContent = currentInput;
+        }
+
+        /**
+         * 清空输入
+         */
+        function clearInput() {
+            currentInput = "";
+            answerInputDisplay.textContent = currentInput;
+            hideFeedback();
+        }
+
+        /**
+         * 退格/删除最后一位
+         */
+        function backspace() {
+            if (currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
+                answerInputDisplay.textContent = currentInput;
+            }
+            hideFeedback();
+        }
+        
+        /**
+         * 显示页面内反馈信息
+         */
+        function showFeedback(message, isCorrect) {
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = isCorrect ? 'correct' : 'wrong';
+            feedbackMessage.style.opacity = 1;
+        }
+
+        /**
+         * 隐藏页面内反馈信息
+         */
+        function hideFeedback() {
+            feedbackMessage.style.opacity = 0;
+            feedbackMessage.textContent = "";
+            feedbackMessage.className = "";
+        }
+
+        /**
+         * 确定按钮逻辑
+         */
+        function submitAnswer() {
+            if (currentInput === "" || currentInput === "-") {
+                showFeedback("请输入答案！", false);
+                return;
+            }
+            
+            const submittedAnswer = currentInput;
+            
+            const isCorrect = submittedAnswer === currentCorrectAnswer; 
+            
+            if (isCorrect) {
+                showFeedback(`恭喜！答案 ${submittedAnswer} 正确！`, true);
+                
+                setTimeout(() => {
+                    currentQuestionIndex++; 
+                    loadNewQuestion();
+                }, FEEDBACK_DELAY); 
+                
+            } else {
+                showFeedback(`很遗憾，答案 ${submittedAnswer} 错误。请重新尝试。`, false);
+                
+                currentInput = ""; 
+                answerInputDisplay.textContent = currentInput;
+            }
+        }
+
+        /**
+         * 重开按钮逻辑
+         */
+        function resetPractice() {
+            const confirmed = confirm("确定要重开本轮练习吗？进度和计时将重置！");
+            if (confirmed) {
+                startPractice(currentQuestionType); 
+            }
+        }
+
+        /**
+         * 返回主界面逻辑
+         */
+        function goBack() {
+            stopTimer(); 
+            
+            practicePage.style.display = 'none';
+            mainMenu.style.display = 'block';
+
+            headerTitle.textContent = "体制之路小程序";
+            backButton.style.visibility = 'hidden'; 
+            currentQuestionType = ""; 
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+             backButton.style.visibility = 'hidden';
+        });
+    </script>
+
+</body>
+</html>
